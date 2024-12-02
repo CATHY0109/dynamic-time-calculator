@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>動態工時計算器</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 500px;
+      background: linear-gradient(135deg, #ffdde1, #ee9ca7, #fad0c4, #a1c4fd, #c2e9fb);
+      background-size: 400% 400%;
+      animation: gradientBG 10s ease infinite;
+      color: #333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    @keyframes gradientBG {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    h1 {
+      text-align: center;
+      color: #5f4b8b;
+      font-size: 1.8em;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      color: #5f4b8b;
+      font-size: 1.2em;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 0.95em;
+      color: #5d5c5a;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 0.95em;
+      margin-bottom: 5px;
+      display: block;
+      color: #4a6a6a;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #c1c2b9;
+      border-radius: 5px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      background: #ffffff;
+      color: #333;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border: 1px solid #8c9999;
+      box-shadow: 0 0 5px rgba(140, 153, 153, 0.5);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: linear-gradient(135deg, #fad0c4, #ff9a9e);
+      transform: scale(1.02);
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      text-align: center;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #5b6058;
+      background: linear-gradient(135deg, #e7e4e1, #d5d4cf);
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .counter {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.8em;
+      color: #5d5c5a;
+    }
+  </style>
+</head>
+<body>
+  <h1>動態工時計算器</h1>
+  <h3>掌控時間節奏，輕鬆安排高效工作日</h3>
+  <p>輸入上班時間與請假資訊，智慧計算下班時間，助您提升工作效率！</p>
+
+  <!-- 計算器區域 -->
+  <div class="container">
+    <label for="startTime">📅 上班時間（彈性上班時間7:00 - 10:00）：</label>
+    <input type="time" id="startTime" value="08:00" min="07:00" max="10:00">
+  </div>
+  <div class="container">
+    <label for="isLeave">是否請假：</label>
+    <select id="isLeave" onchange="toggleLeaveInput()">
+      <option value="no">否</option>
+      <option value="yes">是</option>
+    </select>
+  </div>
+  <div class="container" id="leaveContainer" style="display: none;">
+    <label for="leaveHours">請假時數（小時）：</label>
+    <input type="number" id="leaveHours" value="0" min="0" step="0.5">
+  </div>
+  <button onclick="calculateAndCount()">今天幾點可以下班呢？</button>
+
+  <!-- 計算結果顯示區 -->
+  <div id="result"></div>
+
+  <!-- 使用次數顯示區 -->
+  <div class="counter">
+    本工具已使用次數：<span id="usageCount">0</span> 次
+  </div>
+
+  <script>
+    // 初始化使用次數
+    function initializeCounter() {
+      const count = localStorage.getItem('usageCount') || 0;
+      document.getElementById('usageCount').innerText = count;
+    }
+
+    // 切換請假輸入框顯示
+    function toggleLeaveInput() {
+      const isLeave = document.getElementById('isLeave').value;
+      const leaveContainer = document.getElementById('leaveContainer');
+      leaveContainer.style.display = isLeave === 'yes' ? 'block' : 'none';
+    }
+
+    // 計算下班時間並增加使用次數
+    function calculateAndCount() {
+      calculateEndTime();
+
+      // 增加使用次數
+      let count = parseInt(localStorage.getItem('usageCount') || 0);
+      count += 1;
+      localStorage.setItem('usageCount', count);
+      document.getElementById('usageCount').innerText = count;
+    }
+
+    // 計算下班時間
+    function calculateEndTime() {
+      const startTime = document.getElementById('startTime').value;
+      const isLeave = document.getElementById('isLeave').value;
+      let leaveHours = parseFloat(document.getElementById('leaveHours').value) || 0;
+      let workHours = 8; // 預設標準工作時間為 8 小時
+
+      if (!startTime) {
+        document.getElementById('result').innerText = "您今天幾點上班呢？";
+        return;
+      }
+
+      if (isLeave === 'yes') {
+        workHours = 8 - leaveHours;
+        if (workHours < 0) {
+          document.getElementById('result').innerText = "請假時數過多，無法計算有效的工作時間！";
+          return;
+        }
+      }
+
+      const start = new Date(`1970-01-01T${startTime}`);
+      let totalMinutes = workHours * 60;
+
+      // 處理橫跨午休時間邏輯
+      const breakStart = new Date(`1970-01-01T11:30`);
+      const breakEnd = new Date(`1970-01-01T13:30`);
+      const workEnd = new Date(start.getTime() + totalMinutes * 60000);
+
+      if (start < breakEnd && workEnd > breakStart) {
+        totalMinutes += 60; // 增加午休時間
+      }
+
+      const finalEnd = new Date(start.getTime() + totalMinutes * 60000);
+
+      const hours = finalEnd.getHours();
+      const minutes = finalEnd.getMinutes();
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+      document.getElementById('result').innerText = `您可以在 ${formattedTime} 下班！ 😊`;
+    }
+
+    // 初始化次數顯示
+    initializeCounter();
+  </script>
+</body>
+</html>
